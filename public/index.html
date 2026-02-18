@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cong News</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            line-height: 1.6;
+        }
+        .card {
+            background: #ffffff;
+            border: 1px solid #f1f5f9;
+            border-radius: 1rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .badge-live {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-scheduled {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .badge-daily {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .price-card {
+            position: relative;
+            overflow: hidden;
+        }
+        .price-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            opacity: 0.05;
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+        .news-item {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+        .news-item:hover .news-title {
+            color: #3b82f6;
+        }
+        .news-summary {
+            color: #64748b;
+            font-size: 0.9375rem;
+            line-height: 1.7;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f1f5f9;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.025em;
+        }
+        .price-large {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            line-height: 1;
+        }
+        .price-medium {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        @media (max-width: 768px) {
+            .price-large {
+                font-size: 2rem;
+            }
+            .price-medium {
+                font-size: 1.5rem;
+            }
+            .section-title {
+                font-size: 1.25rem;
+            }
+        }
+        @media (max-width: 480px) {
+            body {
+                font-size: 0.875rem;
+            }
+            .price-large {
+                font-size: 1.75rem;
+            }
+            .section-title {
+                font-size: 1.125rem;
+            }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl gradient-bg flex items-center justify-center shadow-lg">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900 tracking-tight">Cong News</h1>
+                        <p class="text-xs text-gray-500" id="updateTime">最后更新: --</p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-3">
+                    <span class="badge badge-scheduled hidden sm:inline-block">⏰ 每2小时更新</span>
+                    <button onclick="updateData()" class="btn-primary" id="refreshBtn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357 2m15.357 2H15"></path>
+                        </svg>
+                        <span class="hidden sm:inline">刷新数据</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Gold Price Section -->
+        <section class="mb-12 fade-in">
+            <div class="section-header">
+                <h2 class="section-title">当前金价</h2>
+                <span class="badge badge-live">🔴 实时更新</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div id="goldPriceContent" class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+
+            <!-- Forecast Summary -->
+            <div id="forecastSummarySection" class="mt-6 hidden">
+                <div class="card bg-white border border-gray-200 p-6 rounded-xl">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002 2v6a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">市场分析总结</h3>
+                            <p id="forecastSummary" class="text-gray-600 leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Price History -->
+        <section class="mb-12 fade-in stagger-1">
+            <div class="section-header">
+                <h2 class="section-title">历史走势</h2>
+                <span class="text-sm text-gray-500">最近 30 天</span>
+            </div>
+
+            <div class="card bg-white border border-gray-200 rounded-xl">
+                <div id="priceHistoryContent" class="p-6">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- News Section -->
+        <section class="fade-in stagger-2">
+            <div class="section-header">
+                <h2 class="section-title">热点新闻</h2>
+                <span class="badge badge-daily">📰 每日更新</span>
+            </div>
+
+            <div class="card bg-white border border-gray-200 rounded-xl">
+                <div id="newsContent" class="divide-y divide-gray-100">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-16 py-8 border-t border-gray-200">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm text-gray-500">数据来源：Tavily Search API | 更新频率：每 2 小时</p>
+            <p class="text-sm text-gray-400 mt-2">© 2026 Cong News. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 加载金价数据
+        async function loadGoldPrice() {
+            try {
+                const response = await fetch('/api/old/latest');
+                const data = await response.json();
+
+                if (data && data.price_usd) {
+                    const goldPriceContent = document.getElementById('goldPriceContent');
+                    
+                    let changeClass = 'text-gray-600';
+                    let changeIcon = '➖';
+                    if (data.change_1d > 0) {
+                        changeClass = 'text-green-500';
+                        changeIcon = '📈';
+                    } else if (data.change_1d < 0) {
+                        changeClass = 'text-red-500';
+                        changeIcon = '📉';
+                    }
+
+                    goldPriceContent.innerHTML = `
+                        <div class="price-card price-gold bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-300 rounded-xl p-6">
+                            <div class="relative">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-yellow-900 mb-2 tracking-wide">国际金价</p>
+                                        <p class="price-large text-gray-900">$${data.price_usd.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
+                                        <p class="text-sm text-yellow-700 mt-1">美元/盎司</p>
+                                    </div>
+                                    <div class="w-14 h-14 rounded-2xl bg-white/40 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                        <svg class="w-7 h-7 text-yellow-700" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 0 10 10 10 10c0 4.42-2.72 8-6.48 8-6.48 8-2.72 8-6.48 8-10c0-4.42 2.72-8 6.48-8z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 mt-3">
+                                    <span class="${changeClass} text-lg font-medium">${changeIcon}</span>
+                                    <span class="${changeClass} text-lg font-semibold">${data.change_1d > 0 ? '+' : ''}${data.change_1d?.toFixed(2) || '0.00'}%</span>
+                                    <svg class="w-4 h-4 text-yellow-700" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 8v4l3-3m6 3l3-3M4 8h4a1 1 0 011 0v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v4a1 1 0 01-1 1h4a1 1 0 01-1 1v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v4a1 1 0 01-1 1z"></path>
+                                    </svg>
+                                    <span class="text-xs text-gray-700 font-medium">${data.date}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // 显示预测
+                    if (data.forecast) {
+                        const forecastSection = document.getElementById('forecastSummarySection');
+                        const forecastSummary = document.getElementById('forecastSummary');
+                        forecastSection.classList.remove('hidden');
+                        forecastSummary.textContent = data.forecast;
+                    }
+
+                    // 更新时间
+                    document.getElementById('updateTime').textContent = `最后更新: ${data.date}`;
+                }
+            } catch (error) {
+                console.error('加载金价失败:', error);
+                document.getElementById('goldPriceContent').innerHTML = '<div class="p-6 text-center text-red-500">加载失败，请刷新重试</div>';
+            }
+        }
+
+        // 加载历史数据
+        async function loadPriceHistory() {
+            try {
+                const response = await fetch('/api/old/history');
+                const data = await response.json();
+
+                const historyContent = document.getElementById('priceHistoryContent');
+
+                if (data && data.length > 0) {
+                    historyContent.innerHTML = `
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            ${data.map(item => `
+                                <div class="text-center p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <p class="text-xs text-gray-500 mb-2">${item.date}</p>
+                                    <p class="price-medium text-gray-900 mb-1">$${item.price_usd?.toLocaleString(undefined, {maximumFractionDigits: 0}) || '--'}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    historyContent.innerHTML = '<div class="p-6 text-center text-gray-500">暂无历史数据</div>';
+                }
+            } catch (error) {
+                console.error('加载历史数据失败:', error);
+            }
+        }
+
+        // 加载新闻
+        async function loadNews() {
+            try {
+                const response = await fetch('/api/news/latest?limit=10');
+                const data = await response.json();
+
+                const newsContent = document.getElementById('newsContent');
+
+                if (data && data.length > 0) {
+                    newsContent.innerHTML = `
+                        ${data.map((item, index) => `
+                            <a href="${item.url}" target="_blank" class="news-item p-6 hover:bg-gray-50 transition-colors block">
+                                <div class="flex items-start gap-4">
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="news-title text-lg font-semibold text-gray-900 mb-2 line-clamp-2">${item.title}</h3>
+                                        <p class="news-summary mb-3">${item.summary || ''}</p>
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <span class="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-0.5 rounded">${item.category || '热点'}</span>
+                                            <span class="text-xs text-gray-400">${item.date || '今日'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-5 h-5 text-gray-400 hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2v-4M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2v-4M14 4h6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2v-4"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </a>
+                        `).join('')}
+                    `;
+                } else {
+                    newsContent.innerHTML = '<div class="p-6 text-center text-gray-500">暂无新闻</div>';
+                }
+            } catch (error) {
+                console.error('加载新闻失败:', error);
+            }
+        }
+
+        // 更新数据
+        async function updateData() {
+            const button = document.getElementById('refreshBtn');
+            button.disabled = true;
+            button.innerHTML = '<div class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></div><span class="ml-2 text-sm">更新中...</span>';
+
+            try {
+                await fetch('/api/update', { method: 'POST' });
+                await loadGoldPrice();
+                await loadPriceHistory();
+                await loadNews();
+            } catch (error) {
+                console.error('更新失败:', error);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357 2m15.357 2H15"></path></svg><span class="hidden sm:inline">刷新数据</span>';
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGoldPrice();
+            loadPriceHistory();
+            loadNews();
+        });
+    </script>
+</body>
+</html>

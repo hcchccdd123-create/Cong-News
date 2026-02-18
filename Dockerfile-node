@@ -1,0 +1,39 @@
+# Node.js 应用 Dockerfile
+FROM node:22-alpine
+
+# 设置工作目录
+WORKDIR /app
+
+# 安装系统依赖
+RUN apk add --no-cache curl
+
+# 复制依赖文件
+COPY package*.json ./
+
+# 安装项目依赖
+RUN npm ci --only=production
+
+# 创建非 root 用户
+RUN addgroup -g appuser && adduser -G appuser -s /bin/false -u appuser
+
+# 复制项目文件
+COPY . .
+
+# 创建必要的目录并设置权限
+RUN mkdir -p /app/data /app/logs /app/public && \
+    chown -R appuser:appuser /app && \
+    chmod -R 755 /app
+
+# 切换到非 root 用户
+USER appuser
+
+# 暴露端口
+EXPOSE 3000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD node -e "require('http').get('http://localhost:3000/api/old/latest', (res) => res.statusCode === 200 ? 0 : 1)" \
+  || exit 1
+
+# 启动服务
+CMD ["node", "server.js"]

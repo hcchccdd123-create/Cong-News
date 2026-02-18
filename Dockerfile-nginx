@@ -1,0 +1,22 @@
+# Nginx 静态文件 Dockerfile
+FROM nginx:alpine
+
+# 复制 Nginx 配置
+COPY nginx.conf /etc/nginx/nginx.conf:ro
+
+# 复制静态文件（如果有）
+# COPY public/ /usr/share/nginx/html:ro
+
+# 创建日志目录
+RUN mkdir -p /var/log/nginx && \
+    chown -R nginx:nginx /var/log/nginx
+
+# 暴露端口
+EXPOSE 80
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD nginx -t || exit 1
+
+# 启动 Nginx
+CMD ["nginx", "-g", "daemon off;"]

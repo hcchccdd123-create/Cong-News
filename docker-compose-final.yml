@@ -1,0 +1,51 @@
+# Cong News Docker 部署
+version: '3.8'
+
+services:
+  # Node.js 后端服务
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile-node
+    container_name: cong-news-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./prompts.txt:/app/prompts.txt
+      - /root/.openclaw/workspace/skills/tavily-search/tavily.sh:/app/tavily.sh:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/old/latest', (res) => res.statusCode === 200 ? 0 : 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    environment:
+      - NODE_ENV=production
+      - TZ=Asia/Shanghai
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: cong-news-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx
+      - ./public:/usr/share/nginx/html:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/80/api/old/latest"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  data:
+  logs:
