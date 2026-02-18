@@ -1,0 +1,73 @@
+# Python API 服务
+version: '3.8'
+
+services:
+  # Node.js 后端（现有）
+  node-backend:
+    build: .
+    container_name: old-news-site-node
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+    depends_on:
+      - database
+  
+  # Python FastAPI 后端（新）
+  python-backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile-python
+    container_name: old-news-site-python
+    ports:
+      - "3000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_PATH=/app/data/api.db
+      - PROMPTS_FILE=/app/data/prompts.txt
+      - TAVILY_API_BASE=https://api.tavily.com
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - /root/.openclaw/workspace/skills/tavily-search/tavily.sh:/app/tavily.sh:ro
+    restart: unless-stopped
+    depends_on:
+      - database
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+  
+  # 数据库（共享）
+  database:
+    image: alpine:latest
+    container_name: old-news-site-db
+    volumes:
+      - ./data:/data
+    command: tail -f /dev/null
+  
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: old-news-site-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - node-backend
+      - python-backend
+    restart: unless-stopped
+
+volumes:
+  data:
+  logs:
