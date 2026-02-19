@@ -142,3 +142,18 @@ temp/
 
 # Tavily
 *.search
+
+# 备份文件
+*.backup
+*.backup2
+*-backup-*
+
+# 临时文件
+server-backup-*.js
+server-london.js
+
+# 编辑器
+*.swp
+*.swo
+*~
+
