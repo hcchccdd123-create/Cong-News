@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cong News</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -102,6 +104,61 @@
             justify-content: center;
             align-items: center;
             min-height: 200px;
+        }
+        .prose {
+            color: #374151;
+            line-height: 1.6;
+        }
+        .prose h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #1e293b;
+        }
+        .prose h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #1e293b;
+        }
+        .prose h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #1e293b;
+        }
+        .prose p {
+            margin-bottom: 0.75rem;
+        }
+        .prose ul, .prose ol {
+            margin-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .prose li {
+            margin-bottom: 0.25rem;
+        }
+        .prose code {
+            background-color: #f3f4f6;
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            font-family: monospace;
+        }
+        .prose pre {
+            background-color: #1f2937;
+            color: #f9fafb;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+        }
+        .prose pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+            font-size: 0.875rem;
         }
         .spinner {
             width: 40px;
@@ -201,6 +258,82 @@
         .stagger-1 { animation-delay: 0.1s; }
         .stagger-2 { animation-delay: 0.2s; }
         .stagger-3 { animation-delay: 0.3s; }
+        
+        /* 提示词展示 */
+        .prompt-display {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+            color: #475569;
+            max-width: 800px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: all 0.3s ease;
+        }
+        .prompt-display:hover {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        }
+        
+        /* 新闻板块 */
+        .news-section {
+            margin-bottom: 1.5rem;
+        }
+        .news-section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #0f172a;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .news-section-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.75rem;
+        }
+        
+        /* 预测图表 */
+        .chart-container {
+            position: relative;
+            height: 350px !important;
+            width: 100%;
+            border-radius: 1rem;
+            overflow: hidden;
+            background: #ffffff;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        #goldChart {
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 300px !important;
+        }
+        
+        /* 分析总结 */
+        .analysis-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid #f59e0b;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .analysis-box-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -221,9 +354,21 @@
                     </div>
                 </div>
 
+                <!-- Prompts Display -->
+                <div class="hidden md:flex items-center gap-2">
+                    <div class="prompt-display" id="promptsDisplay">
+                        📝 搜索提示词：AI应用 | 机器人 | 量子科技
+                    </div>
+                </div>
+
                 <!-- Actions -->
                 <div class="flex items-center gap-3">
-                    <span class="badge badge-scheduled hidden sm:inline-block">⏰ 每2小时更新</span>
+                    <button onclick="showPromptsModal()" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6a2 2 0 002 2v6a2 2 0 002-2h-2a2 2 0 00-2-2v-6a2 2 0 002-2h6a2 2 0 002 2v6a2 2 0 002 2h-2a2 2 0 00-2-2v-6m-6 4h6a2 2 0 002 2v6a2 2 0 002-2h-2a2 2 0 00-2-2v-6"></path>
+                        </svg>
+                        提示词
+                    </button>
                     <button onclick="updateData()" class="btn-primary" id="refreshBtn">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357 2m15.357 2H15"></path>
@@ -240,26 +385,40 @@
         <!-- Gold Price Section -->
         <section class="mb-12 fade-in">
             <div class="section-header">
-                <h2 class="section-title">当前金价</h2>
+                <h2 class="section-title">伦敦金价</h2>
                 <span class="badge badge-live">🔴 实时更新</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Price Card -->
                 <div id="goldPriceContent" class="loading">
                     <div class="spinner"></div>
+                </div>
+
+                <!-- Chart Card -->
+                <div class="card bg-white border border-gray-200 rounded-xl p-6">
+                    <div class="section-header" style="margin-bottom: 1rem;">
+                        <h3 class="section-title" style="font-size: 1.125rem;">未来30分钟走势预测</h3>
+                        <span class="badge badge-scheduled">📊 基于新闻分析</span>
+                    </div>
+                    
+                    <!-- Chart -->
+                    <div class="chart-container">
+                        <div id="goldChart"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- Forecast Summary -->
             <div id="forecastSummarySection" class="mt-6 hidden">
-                <div class="card bg-white border border-gray-200 p-6 rounded-xl">
+                <div class="card bg-white border border-gray-200 rounded-xl p-6">
                     <div class="flex items-start gap-3">
                         <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
                             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002 2v6a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002 2v6a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2h2a2 2 0 002 2z"></path>
                             </svg>
                         </div>
-                        <div>
+                        <div class="flex-1">
                             <h3 class="font-semibold text-gray-900 mb-2">市场分析总结</h3>
                             <p id="forecastSummary" class="text-gray-600 leading-relaxed"></p>
                         </div>
@@ -268,32 +427,47 @@
             </div>
         </section>
 
-        <!-- Price History -->
-        <section class="mb-12 fade-in stagger-1">
-            <div class="section-header">
-                <h2 class="section-title">历史走势</h2>
-                <span class="text-sm text-gray-500">最近 30 天</span>
-            </div>
-
-            <div class="card bg-white border border-gray-200 rounded-xl">
-                <div id="priceHistoryContent" class="p-6">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- News Section -->
-        <section class="fade-in stagger-2">
+        <!-- News Sections -->
+        <section class="fade-in stagger-1">
             <div class="section-header">
                 <h2 class="section-title">热点新闻</h2>
                 <span class="badge badge-daily">📰 每日更新</span>
             </div>
 
-            <div class="card bg-white border border-gray-200 rounded-xl">
-                <div id="newsContent" class="divide-y divide-gray-100">
-                    <div class="loading">
+            <!-- AI Applications -->
+            <div class="news-section">
+                <div class="news-section-title">
+                    <span class="news-section-icon bg-blue-100 text-blue-700">AI</span>
+                    AI 应用
+                </div>
+                <div class="card bg-white border border-gray-200 rounded-xl">
+                    <div id="ai-news" class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Robotics -->
+            <div class="news-section">
+                <div class="news-section-title">
+                    <span class="news-section-icon bg-green-100 text-green-700">🤖</span>
+                    机器人
+                </div>
+                <div class="card bg-white border border-gray-200 rounded-xl">
+                    <div id="robotics-news" class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quantum Technology -->
+            <div class="news-section">
+                <div class="news-section-title">
+                    <span class="news-section-icon bg-purple-100 text-purple-700">⚛️</span>
+                    量子科技
+                </div>
+                <div class="card bg-white border border-gray-200 rounded-xl">
+                    <div id="quantum-news" class="loading">
                         <div class="spinner"></div>
                     </div>
                 </div>
@@ -309,52 +483,97 @@
         </div>
     </footer>
 
+    <!-- Prompts Modal -->
+    <div id="promptsModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 rounded-t-2xl flex items-center justify-between">
+                <h2 class="text-xl font-bold text-gray-900">新闻搜索提示词</h2>
+                <button onclick="hidePromptsModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6" id="promptsContent">
+                <div class="text-center text-gray-500">
+                    <div class="spinner mx-auto mb-4" style="width: 32px; height: 32px;"></div>
+                    <p>加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // 加载金价数据
+        // 加载金价数据（伦敦金价）
         async function loadGoldPrice() {
             try {
-                const response = await fetch('/api/old/latest');
+                const response = await fetch('/api/london/latest');
                 const data = await response.json();
+
+                console.log('========== 金价数据 ==========');
+                console.log('完整数据:', data);
+                console.log('forecastData 存在:', !!data.forecastData);
+                console.log('forecastData 类型:', typeof data.forecastData);
+                console.log('forecast_data 存在:', !!data.forecast_data);
+                console.log('==============================');
 
                 if (data && data.price_usd) {
                     const goldPriceContent = document.getElementById('goldPriceContent');
                     
-                    let changeClass = 'text-gray-600';
-                    let changeIcon = '➖';
-                    if (data.change_1d > 0) {
-                        changeClass = 'text-green-500';
-                        changeIcon = '📈';
-                    } else if (data.change_1d < 0) {
-                        changeClass = 'text-red-500';
-                        changeIcon = '📉';
-                    }
-
+                    // 使用蓝色主题（伦敦金价）
                     goldPriceContent.innerHTML = `
-                        <div class="price-card price-gold bg-gradient-to-br from-yellow-50 to-yellow-100 border border-yellow-300 rounded-xl p-6">
+                        <div class="price-card price-gold bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-300 rounded-xl p-6">
                             <div class="relative">
                                 <div class="flex items-start justify-between mb-4">
                                     <div class="flex-1">
-                                        <p class="text-sm font-medium text-yellow-900 mb-2 tracking-wide">国际金价</p>
+                                        <p class="text-sm font-medium text-blue-900 mb-2 tracking-wide">伦敦金价</p>
                                         <p class="price-large text-gray-900">$${data.price_usd.toLocaleString(undefined, {maximumFractionDigits: 2})}</p>
-                                        <p class="text-sm text-yellow-700 mt-1">美元/盎司</p>
+                                        <p class="text-sm text-blue-700 mt-1">美元/盎司</p>
                                     </div>
                                     <div class="w-14 h-14 rounded-2xl bg-white/40 flex items-center justify-center flex-shrink-0 shadow-sm">
-                                        <svg class="w-7 h-7 text-yellow-700" fill="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-7 h-7 text-blue-700" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 0 10 10 10 10c0 4.42-2.72 8-6.48 8-6.48 8-2.72 8-6.48 8-10c0-4.42 2.72-8 6.48-8z"></path>
                                         </svg>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2 mt-3">
-                                    <span class="${changeClass} text-lg font-medium">${changeIcon}</span>
-                                    <span class="${changeClass} text-lg font-semibold">${data.change_1d > 0 ? '+' : ''}${data.change_1d?.toFixed(2) || '0.00'}%</span>
-                                    <svg class="w-4 h-4 text-yellow-700" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 8v4l3-3m6 3l3-3M4 8h4a1 1 0 011 0v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v4a1 1 0 01-1 1h4a1 1 0 01-1 1v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v4a1 1 0 01-1 1h-4a1 1 0 01-1 1v4a1 1 0 01-1 1z"></path>
-                                    </svg>
-                                    <span class="text-xs text-gray-700 font-medium">${data.date}</span>
+                                    <span class="bg-blue-100 text-blue-700 text-lg font-medium px-3 py-0.5 rounded">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2L2 12l10 10"></path>
+                                        </svg>
+                                    </span>
+                                    <span class="text-lg font-semibold text-gray-900">伦敦现货</span>
                                 </div>
                             </div>
                         </div>
                     `;
+
+                    // 显示预测图表
+                    if (data.forecastData && typeof data.forecastData === 'object') {
+                        // forecastData 已经是对象，直接使用
+                        console.log('预测数据（对象）:', data.forecastData);
+                        renderChart(data.forecastData);
+                    } else if (data.forecast_data) {
+                        // forecast_data 是 JSON 字符串，需要解析
+                        try {
+                            const forecastData = JSON.parse(data.forecast_data);
+                            console.log('预测数据（解析后）:', forecastData);
+                            renderChart(forecastData);
+                        } catch (e) {
+                            console.error('解析预测数据失败:', e);
+                            console.error('forecast_data 内容:', data.forecast_data);
+                        }
+                    } else {
+                        console.warn('没有预测数据');
+                    }
+
+                    // 显示预测
+                    if (data.forecast || data.forecast_data) {
+                        const forecastSection = document.getElementById('forecastSummarySection');
+                        const forecastSummary = document.getElementById('forecastSummary');
+                        forecastSection.classList.remove('hidden');
+                        forecastSummary.textContent = data.forecast || JSON.parse(data.forecast_data).summary;
+                    }
 
                     // 显示预测
                     if (data.forecast) {
@@ -373,69 +592,224 @@
             }
         }
 
-        // 加载历史数据
-        async function loadPriceHistory() {
+        // 渲染预测图表
+        function renderChart(data) {
+            const chartDom = document.getElementById('goldChart');
+            if (!chartDom) return;
+
+            const chart = echarts.init(chartDom);
+            
+            const dates = data.data_points.map(point => point.time);
+            const values = data.data_points.map(point => point.price);
+            
+            const option = {
+                title: {
+                    text: data.trend,
+                    left: '3%',
+                    textStyle: {
+                        fontSize: 14,
+                        fontWeight: 'bold',
+                        color: '#1e40af'
+                    }
+                },
+                                tooltip: {
+                    trigger: 'axis',
+                    formatter: function (params) {
+                        const point = params[0];
+                        const dataIndex = point.dataIndex;
+                        const time = dates[dataIndex];
+                        const price = values[dataIndex];
+                        return `<div style="font-weight: bold; margin-bottom: 5px;">${time}</div><div style="font-size: 18px; color: #3b82f6;">$${price}</div>`;
+                    }
+                },
+
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    axisLine: {
+                        lineStyle: {
+                            color: '#3b82f6'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#64748b',
+                        fontSize: 12
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '价格',
+                    axisLine: {
+                        lineStyle: {
+                            color: '#3b82f6'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#64748b',
+                        fontSize: 12,
+                        formatter: '${value}'
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#e2e8f0',
+                            type: 'dashed'
+                        }
+                    }
+                },
+                series: [{
+                    name: '金价走势',
+                    type: 'line',
+                    data: values,
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 8,
+                    itemStyle: {
+                        color: '#3b82f6'
+                    },
+                    lineStyle: {
+                        width: 3,
+                        color: '#3b82f6'
+                    },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(59, 130, 246, 0.3)' },
+                            { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
+                        ])
+                    },
+                    markPoint: {
+                        data: [
+                            { coord: [dates[0], values[0]], value: '现在' },
+                            { coord: [dates[3], values[3]], value: '30分钟后' }
+                        ],
+                        symbol: 'circle',
+                        symbolSize: 10,
+                        itemStyle: {
+                            color: '#ffffff',
+                            borderColor: '#3b82f6',
+                            borderWidth: 2
+                        }
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+            
+            window.addEventListener('resize', () => {
+                chart.resize();
+            });
+        }
+
+        // 加载特定板块新闻
+        async function loadNews(category, sectionId) {
             try {
-                const response = await fetch('/api/old/history');
+                const response = await fetch(`/api/news/category/${category}`);
                 const data = await response.json();
 
-                const historyContent = document.getElementById('priceHistoryContent');
-
-                if (data && data.length > 0) {
-                    historyContent.innerHTML = `
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            ${data.map(item => `
-                                <div class="text-center p-4 rounded-lg hover:bg-gray-50 transition-colors">
-                                    <p class="text-xs text-gray-500 mb-2">${item.date}</p>
-                                    <p class="price-medium text-gray-900 mb-1">$${item.price_usd?.toLocaleString(undefined, {maximumFractionDigits: 0}) || '--'}</p>
+                const sectionContent = document.getElementById(sectionId);
+                
+                if (data && data.title) {
+                    // 获取发布时间（从 URL 中提取或使用当前时间）
+                    const publishTime = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                    
+                    // 生成分析总结（基于新闻标题）
+                    const analysis = generateAnalysis(data.title, category);
+                    
+                    sectionContent.innerHTML = `
+                        <div class="p-6">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex-1">
+                                    <h3 class="news-title text-lg font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors">${data.title}</h3>
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded">${category}</span>
+                                        <span class="text-xs text-gray-400">${publishTime}</span>
+                                    </div>
                                 </div>
-                            `).join('')}
+                            </div>
+                            <div class="analysis-box">
+                                <div class="analysis-box-title">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0 9 9 0 00-18 0"></path>
+                                    </svg>
+                                    <span>AI 分析总结</span>
+                                </div>
+                                <p class="text-gray-700 leading-relaxed text-sm">${analysis}</p>
+                            </div>
                         </div>
                     `;
                 } else {
-                    historyContent.innerHTML = '<div class="p-6 text-center text-gray-500">暂无历史数据</div>';
+                    sectionContent.innerHTML = `
+                        <div class="p-6 text-center text-gray-500">
+                            暂无该板块新闻
+                        </div>
+                    `;
                 }
             } catch (error) {
-                console.error('加载历史数据失败:', error);
+                console.error(`加载${category}新闻失败:`, error);
+                const sectionContent = document.getElementById(sectionId);
+                if (sectionContent) {
+                    sectionContent.innerHTML = `
+                        <div class="p-6 text-center text-red-500">
+                            加载失败，请刷新重试
+                        </div>
+                    `;
+                }
             }
         }
 
-        // 加载新闻
-        async function loadNews() {
-            try {
-                const response = await fetch('/api/news/latest?limit=10');
-                const data = await response.json();
-
-                const newsContent = document.getElementById('newsContent');
-
-                if (data && data.length > 0) {
-                    newsContent.innerHTML = `
-                        ${data.map((item, index) => `
-                            <a href="${item.url}" target="_blank" class="news-item p-6 hover:bg-gray-50 transition-colors block">
-                                <div class="flex items-start gap-4">
-                                    <div class="flex-1 min-w-0">
-                                        <h3 class="news-title text-lg font-semibold text-gray-900 mb-2 line-clamp-2">${item.title}</h3>
-                                        <p class="news-summary mb-3">${item.summary || ''}</p>
-                                        <div class="flex items-center gap-2 mt-2">
-                                            <span class="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-0.5 rounded">${item.category || '热点'}</span>
-                                            <span class="text-xs text-gray-400">${item.date || '今日'}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex-shrink-0">
-                                        <svg class="w-5 h-5 text-gray-400 hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2v-4M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2v-4M14 4h6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002 2v-4"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </a>
-                        `).join('')}
-                    `;
-                } else {
-                    newsContent.innerHTML = '<div class="p-6 text-center text-gray-500">暂无新闻</div>';
-                }
-            } catch (error) {
-                console.error('加载新闻失败:', error);
+        // 生成分析总结
+        function generateAnalysis(title, category) {
+            const analysisPoints = [];
+            
+            // 根据类别添加分析点
+            switch (category) {
+                case 'AI应用':
+                    analysisPoints.push('此 AI 应用属于当前热门的技术方向，反映了人工智能在特定领域的实际应用。');
+                    analysisPoints.push('从新闻标题可以看出，该应用可能涉及技术创新和商业化落地的结合。');
+                    analysisPoints.push('AI 应用的发展趋势显示出市场需求和资本关注度。');
+                    break;
+                case '机器人':
+                    analysisPoints.push('此机器人新闻涉及自动化、智能控制或人机协作技术的发展。');
+                    analysisPoints.push('反映了工业、服务或消费级机器人技术的最新进展。');
+                    analysisPoints.push('机器人行业正朝着更智能、更灵活、更安全的方向发展。');
+                    break;
+                case '量子科技':
+                    analysisPoints.push('量子科技新闻涉及量子计算、量子通信或量子材料的研究突破。');
+                    analysisPoints.push('代表了下一代信息技术的重大革新，可能改变现有的计算范式。');
+                    analysisPoints.push('量子科技的发展对密码学、优化、模拟等领域产生深远影响。');
+                    break;
+                default:
+                    analysisPoints.push('这是一个重要的技术新闻，可能对相关行业产生重要影响。');
+                    analysisPoints.push('建议关注其后续发展和技术应用。');
             }
+            
+            // 根据标题关键词添加分析
+            if (title.includes('突破') || title.includes('创新')) {
+                analysisPoints.push('该新闻涉及技术突破和创新，可能带来行业变革。');
+            }
+            if (title.includes('发布') || title.includes('上市')) {
+                analysisPoints.push('产品发布或上市标志着技术商业化的关键里程碑。');
+            }
+            if (title.includes('合作') || title.includes('投资')) {
+                analysisPoints.push('商业合作或投资显示出市场信心和技术价值的认可。');
+            }
+            
+            return analysisPoints.join(' ');
+        }
+
+        // 加载所有板块新闻
+        async function loadAllNews() {
+            await Promise.all([
+                loadNews('AI应用', 'ai-news'),
+                loadNews('机器人', 'robotics-news'),
+                loadNews('量子科技', 'quantum-news')
+            ]);
         }
 
         // 更新数据
@@ -447,8 +821,7 @@
             try {
                 await fetch('/api/update', { method: 'POST' });
                 await loadGoldPrice();
-                await loadPriceHistory();
-                await loadNews();
+                await loadAllNews();
             } catch (error) {
                 console.error('更新失败:', error);
             } finally {
@@ -457,11 +830,51 @@
             }
         }
 
+        // 显示提示词
+        async function showPromptsModal() {
+            const modal = document.getElementById('promptsModal');
+            const content = document.getElementById('promptsContent');
+
+            modal.classList.remove('hidden');
+
+            // 加载提示词
+            try {
+                const response = await fetch('/api/prompts');
+                const data = await response.json();
+
+                if (data && data.markdown) {
+                    // 使用 marked 解析 Markdown
+                    const htmlContent = marked.parse(data.markdown);
+
+                    // 添加自定义样式
+                    content.innerHTML = `
+                        <div class="prose prose-sm max-w-none">
+                            ${htmlContent}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('加载提示词失败:', error);
+                content.innerHTML = '<div class="text-center text-red-500">加载失败，请刷新重试</div>';
+            }
+        }
+
+        // 隐藏提示词
+        function hidePromptsModal() {
+            document.getElementById('promptsModal').classList.add('hidden');
+        }
+
+        // 点击模态框外部关闭
+        document.getElementById('promptsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hidePromptsModal();
+            }
+        });
+
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', () => {
             loadGoldPrice();
-            loadPriceHistory();
-            loadNews();
+            loadAllNews();
         });
     </script>
 </body>

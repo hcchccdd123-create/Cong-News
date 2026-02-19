@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图表调试 - Cong News</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        #debugChart {
+            width: 100%;
+            height: 100%;
+        }
+        .debug-info {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .debug-info h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .debug-info pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 金价预测图表调试</h1>
+
+        <div class="card">
+            <h2>API 数据</h2>
+            <button class="btn" onclick="fetchData()">获取最新数据</button>
+            <div id="apiData" style="margin-top: 15px; color: #666;">点击按钮获取数据...</div>
+        </div>
+
+        <div class="card">
+            <h2>ECharts 图表</h2>
+            <div class="chart-container">
+                <div id="debugChart"></div>
+            </div>
+        </div>
+
+        <div class="debug-info">
+            <h3>调试信息</h3>
+            <div id="debugLog" style="font-family: monospace; font-size: 12px; color: #666;">
+                等待操作...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+
+        function log(message) {
+            const debugLog = document.getElementById('debugLog');
+            debugLog.innerHTML += '<div>' + new Date().toLocaleTimeString() + ' - ' + message + '</div>';
+            console.log(message);
+        }
+
+        async function fetchData() {
+            log('开始获取数据...');
+            document.getElementById('apiData').innerHTML = '加载中...';
+
+            try {
+                const response = await fetch('/api/london/latest');
+                const data = await response.json();
+
+                log('获取数据成功！');
+                log('完整数据: ' + JSON.stringify(data, null, 2));
+
+                document.getElementById('apiData').innerHTML = `
+                    <strong>金价:</strong> $${data.price_usd}<br>
+                    <strong>趋势:</strong> ${data.forecastData ? data.forecastData.trend : 'N/A'}<br>
+                    <strong>预测数据:</strong> ${data.forecastData ? JSON.stringify(data.forecastData.data_points) : 'N/A'}
+                `;
+
+                if (data.forecastData && data.forecastData.data_points) {
+                    renderChart(data.forecastData);
+                    log('图表渲染成功！');
+                } else {
+                    log('错误：没有预测数据');
+                    alert('没有预测数据！');
+                }
+            } catch (error) {
+                log('获取数据失败: ' + error.message);
+                document.getElementById('apiData').innerHTML = '<span style="color: red;">错误: ' + error.message + '</span>';
+            }
+        }
+
+        function renderChart(forecastData) {
+            log('开始渲染图表...');
+            log('数据点: ' + forecastData.data_points.length);
+
+            const chartDom = document.getElementById('debugChart');
+
+            if (chart) {
+                chart.dispose();
+            }
+
+            chart = echarts.init(chartDom);
+
+            const dates = forecastData.data_points.map(point => point.time);
+            const values = forecastData.data_points.map(point => point.price);
+
+            log('X轴数据: ' + JSON.stringify(dates));
+            log('Y轴数据: ' + JSON.stringify(values));
+
+            const option = {
+                title: {
+                    text: forecastData.trend,
+                    left: '3%',
+                    textStyle: {
+                        fontSize: 16,
+                        fontWeight: 'bold'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function (params) {
+                        const point = params[0];
+                        return `${point.axisValue}<br/>$${point.data.price}`;
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    axisLine: {
+                        lineStyle: {
+                            color: '#3b82f6'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#64748b',
+                        fontSize: 12
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '价格',
+                    axisLine: {
+                        lineStyle: {
+                            color: '#3b82f6'
+                        }
+                    },
+                    axisLabel: {
+                        color: '#64748b',
+                        fontSize: 12,
+                        formatter: '${value}'
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: '#e2e8f0',
+                            type: 'dashed'
+                        }
+                    }
+                },
+                series: [{
+                    name: '金价走势',
+                    type: 'line',
+                    data: values,
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 8,
+                    itemStyle: {
+                        color: '#3b82f6'
+                    },
+                    lineStyle: {
+                        width: 3,
+                        color: '#3b82f6'
+                    },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(59, 130, 246, 0.3)' },
+                            { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
+                        ])
+                    },
+                    markPoint: {
+                        data: [
+                            { coord: [dates[0], values[0]], value: '现在' },
+                            { coord: [dates[3], values[3]], value: '30分钟后' }
+                        ],
+                        symbol: 'circle',
+                        symbolSize: 10,
+                        itemStyle: {
+                            color: '#ffffff',
+                            borderColor: '#3b82f6',
+                            borderWidth: 2
+                        }
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+
+            window.addEventListener('resize', () => {
+                chart.resize();
+            });
+        }
+
+        // 自动获取数据
+        window.onload = function() {
+            log('页面加载完成，自动获取数据...');
+            fetchData();
+        };
+    </script>
+</body>
+</html>
